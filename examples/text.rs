@@ -22,11 +22,11 @@ impl Text for Foo {
 }
 
 fn print_text<T: Text>() {
-    let scope = &();
-    let val: &RefCell<T> = Current::current_unwrap(scope);
-    let mut val = val.borrow_mut();
-    println!("{}", val.get_text());
-    val.set_text("world!".to_string());
+    Current::with_current_unwrap(|val: &RefCell<T>| {
+        let mut val = val.borrow_mut();
+        println!("{}", val.get_text());
+        val.set_text("world!".to_string());
+    });
 }
 
 fn bar() {
