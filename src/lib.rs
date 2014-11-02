@@ -42,11 +42,11 @@ impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
 pub trait Current {
     /// Sets current mutable borrow for this concrete type.
     fn set_current<'a>(&'a self) -> CurrentGuard<'a, Self>;
-    /// Returns a mutable borrow with lifetime inherited from lifetime.
-    fn current(scope: &()) -> Option<&Self>;
-    /// Returns a mutable borrow with lifetime inherited from scope.
+    /// Calls closure if the current value is set.
+    fn with_current<U>(f: |&Self| -> U) -> Option<U>;
+    /// Calls closure if the current value is set.
     /// Gives a nicer error message of the expected type.
-    fn current_unwrap(_scope: &()) -> &Self;
+    fn with_current_unwrap<U>(f: |&Self| -> U) -> U;
 }
 
 impl<T: 'static> Current for T {
@@ -69,7 +69,7 @@ impl<T: 'static> Current for T {
         CurrentGuard { old_ptr: old_ptr, _val: self }
     }
     
-    fn current(_scope: &()) -> Option<&T> {
+    fn with_current<U>(f: |&T| -> U) -> Option<U> {
         use std::mem::transmute;
         let id = TypeId::of::<T>();
         let current = match key_current.replace(None) {
@@ -81,11 +81,11 @@ impl<T: 'static> Current for T {
             Some(x) => *x
         };
         key_current.replace(Some(current));
-        Some(unsafe { transmute(ptr as *const T) })
+        Some(f(unsafe { transmute(ptr as *const T) }))
     }
 
-    fn current_unwrap(_scope: &()) -> &T {
-        match Current::current(_scope) {
+    fn with_current_unwrap<U>(f: |&T| -> U) -> U {
+        match Current::with_current(f) {
             None => {
                 use std::intrinsics::get_tydesc;
                 let name = unsafe { (*get_tydesc::<T>()).name };
