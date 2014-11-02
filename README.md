@@ -11,7 +11,10 @@ When you are calling a normal function, you use order or naming to tell the comp
 foo(a, b); // we are referring to variable `a` and `b` in scope.
 ```
 
-However, you can use any convention to describe relationships, not just order or naming. In this library we have developed a safe convention that uses concrete types. Each concrete type can have a "current" value, which is accessible to all functions that knows about the type:
+However, you can use any convention to describe relationships, not just order or naming.
+In this library we have developed a safe convention that uses concrete types.
+Each concrete type can have a "current" value,
+which is accessible to all functions that knows about the type:
 
 ```Rust
 let a = RefCell::new(a); // RefCell prevents multiple mutable references at run time.
