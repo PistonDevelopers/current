@@ -1,0 +1,13 @@
+[package]
+
+name = "current"
+version = "0.0.0"
+authors = [
+    "bvssvni <bvssvni@gmail.com>"
+]
+tags = []
+
+[lib]
+
+name = "current"
+path = "src/lib.rs"
