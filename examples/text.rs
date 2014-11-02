@@ -1,6 +1,7 @@
 extern crate current;
 
 use current::Current;
+use std::cell::RefCell;
 
 pub struct Foo {
     text: String
@@ -21,14 +22,15 @@ impl Text for Foo {
 }
 
 fn print_text<T: Text>() {
-    let scope = &mut ();
-    let val: &mut T = Current::current_unwrap(scope);
+    let scope = &();
+    let val: &RefCell<T> = Current::current_unwrap(scope);
+    let mut val = val.borrow_mut();
     println!("{}", val.get_text());
     val.set_text("world!".to_string());
 }
 
 fn bar() {
-    let mut bar = Foo { text: "good bye".to_string() };
+    let bar = RefCell::new(Foo { text: "good bye".to_string() });
     let guard = bar.set_current();
     print_text::<Foo>();
     print_text::<Foo>();
@@ -36,7 +38,7 @@ fn bar() {
 }
 
 fn main() {
-    let mut foo = Foo { text: "hello".to_string() };
+    let foo = RefCell::new(Foo { text: "hello".to_string() });
     {
         let guard = foo.set_current();
         print_text::<Foo>();
@@ -44,6 +46,6 @@ fn main() {
         bar();
         drop(guard);
     }
-    foo.text = "hi!".to_string();
+    foo.borrow_mut().text = "hi!".to_string();
 }
 
