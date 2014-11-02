@@ -8,19 +8,26 @@ A library for setting current values for stack scope, such as application struct
 When you are calling a normal function, you use order or naming to tell the compiler the relationships between data on the stack:
 
 ```Rust
-foo(a, b); // we are referring to variable `a` and `b` in scope.
+foo(a, b); // use variable `a` and `b` in scope.
 ```
 
 However, you can use any convention to describe relationships, not just order or naming.
 In this library we have developed a safe convention that uses concrete types.
+
+```Rust
+foo::<A>(b); // use type `A` and variable `b` in scope.
+```
+
 Each concrete type can have a "current" value,
-which is accessible to all functions that knows about the type:
+which is accessible to all functions that knows about the type.
+Immutable references are supported by default,
+but if you want mutability, you can use [RefCell](http://doc.rust-lang.org/std/cell/struct.RefCell.html).
 
 ```Rust
 let a = RefCell::new(a); // RefCell prevents multiple mutable references at run time.
 let a_guard = a.set_current();
 
-foo::<A>(b); // we are referring to the current value of type `A` and the variable `b` in scope.
+foo::<A>(b); // use type `A` and variable `b` in scope.
 
 drop(a_guard);
 
