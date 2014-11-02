@@ -13,7 +13,7 @@ local_data_key!(key_current: HashMap<TypeId, uint>)
 
 /// Puts back the previous current pointer.
 pub struct CurrentGuard<'a, T: 'a> {
-    _val: &'a mut T,
+    _val: &'a T,
     old_ptr: Option<uint>
 }
 
@@ -41,18 +41,18 @@ impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
 /// Implemented by all concrete types to define a current value for a scope.
 pub trait Current {
     /// Sets current mutable borrow for this concrete type.
-    fn set_current<'a>(&'a mut self) -> CurrentGuard<'a, Self>;
+    fn set_current<'a>(&'a self) -> CurrentGuard<'a, Self>;
     /// Returns a mutable borrow with lifetime inherited from lifetime.
-    fn current(scope: &mut ()) -> Option<&mut Self>;
+    fn current(scope: &()) -> Option<&Self>;
     /// Returns a mutable borrow with lifetime inherited from scope.
     /// Gives a nicer error message of the expected type.
-    fn current_unwrap(_scope: &mut ()) -> &mut Self;
+    fn current_unwrap(_scope: &()) -> &Self;
 }
 
 impl<T: 'static> Current for T {
-    fn set_current(&mut self) -> CurrentGuard<T> {
+    fn set_current(&self) -> CurrentGuard<T> {
         let id = TypeId::of::<T>();
-        let ptr = self as *mut T as uint;
+        let ptr = self as *const T as uint;
         let current = key_current.replace(None);
         let mut current = match current {
             None => HashMap::new(),
@@ -69,7 +69,7 @@ impl<T: 'static> Current for T {
         CurrentGuard { old_ptr: old_ptr, _val: self }
     }
     
-    fn current(_scope: &mut ()) -> Option<&mut T> {
+    fn current(_scope: &()) -> Option<&T> {
         use std::mem::transmute;
         let id = TypeId::of::<T>();
         let current = match key_current.replace(None) {
@@ -81,10 +81,10 @@ impl<T: 'static> Current for T {
             Some(x) => *x
         };
         key_current.replace(Some(current));
-        Some(unsafe { transmute(ptr as *mut T) })
+        Some(unsafe { transmute(ptr as *const T) })
     }
 
-    fn current_unwrap(_scope: &mut ()) -> &mut T {
+    fn current_unwrap(_scope: &()) -> &T {
         match Current::current(_scope) {
             None => {
                 use std::intrinsics::get_tydesc;
