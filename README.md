@@ -15,7 +15,7 @@ However, you can use any convention to describe relationships, not just order or
 In this library we have developed a safe convention that uses concrete types.
 
 ```Rust
-foo::<A>(b); // use type `A` and variable `b` in scope.
+foo::<A>(b); // use current value of type `A` and variable `b` in scope.
 ```
 
 Each concrete type can have a "current" value,
