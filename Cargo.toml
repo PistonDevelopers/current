@@ -11,3 +11,8 @@ tags = []
 
 name = "current"
 path = "src/lib.rs"
+
+[dependencies.modifier]
+
+git = "https://github.com/reem/rust-modifier"
+
