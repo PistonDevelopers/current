@@ -7,12 +7,12 @@ pub struct Foo {
     text: String
 }
 
-pub trait Text {
+pub trait TextProperty {
     fn get_text(&self) -> &str;
     fn set_text(&mut self, text: String);
 }
 
-impl Text for Foo {
+impl TextProperty for Foo {
     fn get_text(&self) -> &str {
         self.text.as_slice()
     }
@@ -21,12 +21,35 @@ impl Text for Foo {
     }
 }
 
-fn print_text<T: Text>() {
+pub struct Text(pub String);
+
+impl<T: TextProperty> current::Get<RefCell<T>> for Text {
+    fn get(obj: &RefCell<T>) -> Text {
+        Text(obj.borrow().get_text().to_string())
+    }
+}
+
+impl<T: TextProperty> current::Modifier<T> for Text {
+    fn modify(self, obj: &mut T) {
+        let Text(text) = self;
+        obj.set_text(text)
+    }
+}
+
+fn print_text<T: TextProperty>() {
+    // /*
+    let Text(text) = current::get::<RefCell<T>, Text>();
+    println!("{}", text);
+    current::set::<T, Text>(Text("world!".to_string()));
+    // */
+
+    /*
     Current::with_current_unwrap(|val: &RefCell<T>| {
         let mut val = val.borrow_mut();
         println!("{}", val.get_text());
         val.set_text("world!".to_string());
     });
+    */
 }
 
 fn bar() {
@@ -48,4 +71,3 @@ fn main() {
     }
     foo.borrow_mut().text = "hi!".to_string();
 }
-
