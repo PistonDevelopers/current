@@ -14,7 +14,7 @@ mod current;
 /// Implemented by types that can be constructed from another value.
 pub trait Get<T> {
     /// Returns new value.
-    fn get(obj: &T) -> Self;
+    fn get(&self) -> T;
 }
 
 /// Transmutes the current value to a lifetime scope.
@@ -38,11 +38,11 @@ pub fn set<T, U: Modifier<T>>(val: U) {
 
 /// Gets value from current object of type `T`.
 /// The returned type must implement the `GetFrom` trait.
-pub fn get<T, U: Get<T>>() -> U {
+pub fn get<T: Get<U>, U>() -> U {
     use std::cell::RefCell;
     Current::with_current_unwrap(|current: &RefCell<T>| {
         match current.try_borrow() {
-            Some(val) => Get::get(&*val),
+            Some(val) => val.get(),
             None => {
                 use std::intrinsics::get_tydesc;
                 let name = unsafe { (*get_tydesc::<T>()).name };

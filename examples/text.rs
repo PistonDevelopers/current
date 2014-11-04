@@ -23,9 +23,9 @@ impl TextProperty for Foo {
 
 pub struct Text(pub String);
 
-impl<T: TextProperty> current::Get<T> for Text {
-    fn get(obj: &T) -> Text {
-        Text(obj.get_text().to_string())
+impl<T: TextProperty> current::Get<Text> for T {
+    fn get(&self) -> Text {
+        Text(self.get_text().to_string())
     }
 }
 
