@@ -39,7 +39,15 @@ pub fn set<T, U: Modifier<T>>(val: U) {
 /// Gets value from current object of type `T`.
 /// The returned type must implement the `GetFrom` trait.
 pub fn get<T, U: Get<T>>() -> U {
-    Current::with_current_unwrap(|current: &T| {
-        Get::get(current)
+    use std::cell::RefCell;
+    Current::with_current_unwrap(|current: &RefCell<T>| {
+        match current.try_borrow() {
+            Some(val) => Get::get(&*val),
+            None => {
+                use std::intrinsics::get_tydesc;
+                let name = unsafe { (*get_tydesc::<T>()).name };
+                panic!("The current `{}` is already in use", name);
+            }
+        }
     })
 }

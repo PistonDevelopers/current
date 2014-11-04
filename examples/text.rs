@@ -23,9 +23,9 @@ impl TextProperty for Foo {
 
 pub struct Text(pub String);
 
-impl<T: TextProperty> current::Get<RefCell<T>> for Text {
-    fn get(obj: &RefCell<T>) -> Text {
-        Text(obj.borrow().get_text().to_string())
+impl<T: TextProperty> current::Get<T> for Text {
+    fn get(obj: &T) -> Text {
+        Text(obj.get_text().to_string())
     }
 }
 
@@ -38,7 +38,7 @@ impl<T: TextProperty> current::Modifier<T> for Text {
 
 fn print_text<T: TextProperty>() {
     // /*
-    let Text(text) = current::get::<RefCell<T>, Text>();
+    let Text(text) = current::get::<T, Text>();
     println!("{}", text);
     current::set::<T, Text>(Text("world!".to_string()));
     // */
