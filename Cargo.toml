@@ -3,7 +3,8 @@
 name = "current"
 version = "0.0.0"
 authors = [
-    "bvssvni <bvssvni@gmail.com>"
+    "bvssvni <bvssvni@gmail.com>",
+    "Jonathan Reem <jonathan.reem@gmail.com>"
 ]
 tags = []
 
@@ -11,8 +12,4 @@ tags = []
 
 name = "current"
 path = "src/lib.rs"
-
-[dependencies.modifier]
-
-git = "https://github.com/reem/rust-modifier"
 
