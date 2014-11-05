@@ -1,15 +1,44 @@
+#![license = "MIT"]
 #![deny(missing_docs)]
 #![feature(unsafe_destructor)]
 
 //! A library for setting current values for stack scope,
 //! such as application structure.
 
-extern crate modifier;
-
-pub use modifier::{ Modifier, Set };
 pub use current::{ Current, CurrentGuard };
 
 mod current;
+
+/// Allows use of the implemented type as an argument to Set::set.
+///
+/// This allows types to be used for ad-hoc overloading of Set::set
+/// to perform complex updates to the parameter of Modifier.
+pub trait Modifier<F> {
+    /// Modify `F` with self.
+    fn modify(self, &mut F);
+}
+
+/// A blanket trait providing the set and set_mut methods for all types.
+pub trait Set<M: Modifier<Self>> {
+    /// Modify self using the provided modifier.
+    #[inline(always)]
+    fn set(mut self, modifier: M) -> Self {
+        modifier.modify(&mut self);
+        self
+    }
+
+    /// Modify self through a mutable reference with the provided modifier.
+    ///
+    /// Note that this still causes a shallow copy of self, so can be
+    /// slow for types which are expensive to move.
+    #[inline(always)]
+    fn set_mut(&mut self, modifier: M) -> &mut Self {
+        modifier.modify(self);
+        self
+    }
+}
+
+impl<T, U: Modifier<T>> Set<U> for T {}
 
 /// Implemented by types that can be constructed from another value.
 pub trait Get<T> {
