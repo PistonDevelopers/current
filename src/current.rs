@@ -1,7 +1,7 @@
 
 use std::intrinsics::TypeId;
 use std::collections::HashMap;
-use std::collections::hashmap::{ Occupied, Vacant };
+use std::collections::hash_map::{ Occupied, Vacant };
 
 // Stores the current pointers for concrete types.
 local_data_key!(key_current: HashMap<TypeId, uint>)
