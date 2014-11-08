@@ -37,6 +37,41 @@ impl<'a, T: 'a> Usage<'a, T> {
             UseCurrent => Current::with_current_unwrap(f),
         }
     }
+
+    /// Unwraps to the scope of usage.
+    /// Should only be called when the usage object or returned reference
+    /// does not outlives the guard of the current object.
+    #[inline(always)]
+    pub unsafe fn unsafe_unwrap(&self) -> &RefCell<T> {
+        match *self {
+            Use(val) => val,
+            UseCurrent => {
+                Current::with_current_unwrap(|current: &RefCell<T>| {
+                    use std::mem::transmute;
+                    transmute(current)
+                })
+            }
+        }
+    }
+}
+
+impl<'a, T: Get<U>, U> Get<U> for Usage<'a, T> {
+    #[inline(always)]
+    fn get(&self) -> U {
+        self.with_unwrap(|val: &RefCell<T>| {
+            val.borrow().deref().get()
+        })
+    }
+}
+
+impl<'a, F, T: Modifier<F>> Modifier<Usage<'a, F>> for T {
+    #[inline(always)]
+    fn modify(self, obj: &mut Usage<'a, F>) {
+        unsafe {
+            let val: &RefCell<F> = obj.unsafe_unwrap();
+            self.modify(val.borrow_mut().deref_mut())
+        }
+    }
 }
 
 /// Allows use of the implemented type as an argument to Set::set.
