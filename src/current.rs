@@ -71,7 +71,7 @@ impl<T: 'static> Current for T {
             None => { return None; }
             Some(current) => current
         };
-        let ptr = match current.find(&id) {
+        let ptr = match current.get(&id) {
             None => { return None; }
             Some(x) => *x
         };
