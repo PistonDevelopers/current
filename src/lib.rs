@@ -81,9 +81,9 @@ impl<T: Get<U>, U> Get<U> for RefCell<T> {
     }
 }
 
-impl<F, T: Modifier<F>> Modifier<RefCell<F>> for T {
+impl<'a, F, T: Modifier<F>> Modifier<&'a RefCell<F>> for T {
     #[inline(always)]
-    fn modify(self, obj: &mut RefCell<F>) {
+    fn modify(self, obj: &mut &'a RefCell<F>) {
         self.modify(obj.borrow_mut().deref_mut())
     }
 }
