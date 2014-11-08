@@ -74,7 +74,7 @@ impl<'a, F, T: Modifier<F>> Modifier<Usage<'a, F>> for T {
     }
 }
 
-impl<T: Get<U>, U> Get<U> for RefCell<T> {
+impl<'a, T: Get<U>, U> Get<U> for &'a RefCell<T> {
     #[inline(always)]
     fn get(&self) -> U {
         self.borrow().deref().get()
