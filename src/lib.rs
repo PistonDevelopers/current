@@ -7,7 +7,37 @@
 
 pub use current::{ Current, CurrentGuard };
 
+use std::cell::RefCell;
+
 mod current;
+
+/// Specifies whether to use a shared reference,
+/// or the current object of that type.
+pub enum Usage<'a, T: 'a> {
+    /// Use a shared reference.
+    Use(&'a RefCell<T>),
+    /// Use the current object.
+    UseCurrent,
+}
+
+impl<'a, T: 'a> Usage<'a, T> {
+    /// Calls closure with a shared reference to used object.
+    pub fn with<U>(&self, f: |&RefCell<T>| -> U) -> Option<U> {
+        match *self {
+            Use(val) => Some(f(val)),
+            UseCurrent => Current::with_current(f),
+        }
+    }
+
+    /// Calls closure with a shared reference to used object.
+    /// Gives a nicer error message if current object is not set.
+    pub fn with_unwrap<U>(&self, f: |&RefCell<T>| -> U) -> U {
+        match *self {
+            Use(val) => f(val),
+            UseCurrent => Current::with_current_unwrap(f),
+        }
+    }
+}
 
 /// Allows use of the implemented type as an argument to Set::set.
 ///
@@ -56,7 +86,6 @@ pub unsafe fn unsafe_current_unwrap<T>(_scope: &()) -> &T {
 /// Sets value on current type, assuming using a `RefCell` to make it safe.
 /// Panics if there is no current object of type `T`.
 pub fn set<T, U: Modifier<T>>(val: U) {
-    use std::cell::RefCell;
     let scope = &();
     let current: &RefCell<T> = unsafe { unsafe_current_unwrap(scope) };
     val.modify(&mut*current.borrow_mut());
@@ -65,7 +94,6 @@ pub fn set<T, U: Modifier<T>>(val: U) {
 /// Gets value from current object of type `T`.
 /// The returned type must implement the `GetFrom` trait.
 pub fn get<T: Get<U>, U>() -> U {
-    use std::cell::RefCell;
     Current::with_current_unwrap(|current: &RefCell<T>| {
         match current.try_borrow() {
             Some(val) => val.get(),
