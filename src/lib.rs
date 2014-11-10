@@ -98,23 +98,27 @@ pub trait Modifier<F> {
 }
 
 /// A blanket trait providing the set and set_mut methods for all types.
-pub trait Set<M: Modifier<Self>> {
+pub trait Set<M> {
     /// Modify self using the provided modifier.
+    fn set(mut self, modifier: M) -> Self;
+    
+    /// Modify self through a mutable reference with the provided modifier.
+    fn set_mut(&mut self, modifier: M) -> &mut Self;
+}
+
+impl<T, U: Modifier<T>> Set<U> for T {
     #[inline(always)]
-    fn set(mut self, modifier: M) -> Self {
+    fn set(mut self, modifier: U) -> T {
         modifier.modify(&mut self);
         self
     }
 
-    /// Modify self through a mutable reference with the provided modifier.
     #[inline(always)]
-    fn set_mut(&mut self, modifier: M) -> &mut Self {
+    fn set_mut(&mut self, modifier: U) -> &mut T {
         modifier.modify(self);
         self
     }
 }
-
-impl<T, U: Modifier<T>> Set<U> for T {}
 
 /// Implemented by types that can be constructed from another value.
 pub trait Get<T> {
