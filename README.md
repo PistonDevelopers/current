@@ -44,40 +44,6 @@ Read more in the issue for [Best coding practices with current objects](https://
 
 ### Why?
 
-When you are calling a normal function, you use order or naming to tell the compiler the relationships between data on the stack:
-
-```Rust
-foo(a, b); // use variable `a` and `b` in scope.
-```
-
-However, you can use any convention to describe relationships, not just order or naming.
-In this library we have developed a safe convention that uses concrete types.
-
-```Rust
-foo::<A>(b); // use current value of type `A` and variable `b` in scope.
-```
-
-Each concrete type can have a "current" value,
-which is accessible to all functions that knows about the type.
-Immutable references are supported by default,
-but if you want mutability, you can use [RefCell](http://doc.rust-lang.org/std/cell/struct.RefCell.html).
-
-```Rust
-let a = RefCell::new(a); // RefCell prevents multiple mutable references at run time.
-let a_guard = a.set_current();
-
-foo::<A>(b); // use type `A` and variable `b` in scope.
-
-drop(a_guard);
-
-fn foo<T>(b: &mut B) {
-    Current::with_current(|a: &RefCell<T>| {
-        let a = a.borrow_mut();
-        *a = ...
-    });
-}
-```
-
 In game programming, there are many kinds of "current" values:
 
 * The current window
@@ -98,8 +64,5 @@ e.press(|button| {
 
 This makes it easier to decouple data from each other in the application structure.
 
-The major motivation for this library is to have a convention that works across libraries,
-such that two people can share code by depending on the same library,
-without knowing what the other person is doing.
-This is important for building higher level game libraries.
+The major motivation for this library is to have a convention that works across libraries.
 
