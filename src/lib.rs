@@ -55,6 +55,20 @@ impl<'a, T: 'a> Usage<'a, T> {
     }
 }
 
+impl<'b, T> Deref<T> for Usage<'b, T> {
+    fn deref<'a>(&'a self) -> &'a T {
+        use std::mem::transmute;
+        unsafe { transmute(self.unsafe_unwrap().borrow().deref()) }
+    }
+}
+
+impl<'b, T> DerefMut<T> for Usage<'b, T> {
+    fn deref_mut<'a>(&'a mut self) -> &'a mut T {
+        use std::mem::transmute;
+        unsafe { transmute(self.unsafe_unwrap().borrow_mut().deref_mut()) }
+    }
+}
+
 impl<'a, T: Get<U>, U> Get<U> for Usage<'a, T> {
     #[inline(always)]
     fn get(&self) -> U {

@@ -20,6 +20,7 @@ impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
         match self.old_ptr {
             None => {
                 current.remove(&id);
+                key_current.replace(Some(current));
                 return;
             }
             Some(old_ptr) => {
