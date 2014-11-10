@@ -40,6 +40,8 @@ You can also assign a new value to the current object and get a copy if the obje
 
 This can also be done with more advanced objects, because Rust calls `drop` and cleans up the old object before it gets replaced with a new one.
 
+Read more in the issue for [Best coding practices with current objects](https://github.com/PistonDevelopers/current/issues/15)
+
 ### Why?
 
 When you are calling a normal function, you use order or naming to tell the compiler the relationships between data on the stack:
