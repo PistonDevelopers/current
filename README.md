@@ -3,6 +3,43 @@ current [![Build Status](https://travis-ci.org/PistonDevelopers/current.svg)](ht
 
 A library for setting current values for stack scope, such as application structure
 
+### How to use it
+
+Declare a function, prefixed with `current_` to indicate that a current object is used:
+
+```Rust
+fn current_window() -> Usage<'static, Window> { UseCurrent }
+```
+
+When you want to use the current object in a function, you do this:
+
+```Rust
+let window = RefCell::new(window); // create a shared reference to the object
+let window_guard = window.set_current();
+start(); // function that uses the current object.
+drop(window_guard);
+```
+
+Inside the function where you use the current object, you can call the function and use it as an object:
+
+```Rust
+fn start() {
+    current_window().set_title("Hello");
+    ...
+}
+```
+
+This works because the `Usage` enum implements `Deref` and `DerefMut` which gets a reference to the current object for the scope it is used.
+
+You can also assign a new value to the current object and get a copy if the object implements `Copy`:
+
+```Rust
+// `health` is u32 so we can dereference it to get the value and also assign a new one.
+*current_health() = *current_health() - 1;
+```
+
+This can also be done with more advanced objects, because Rust calls `drop` and cleans up the old object before it gets replaced with a new one.
+
 ### Why?
 
 When you are calling a normal function, you use order or naming to tell the compiler the relationships between data on the stack:
@@ -52,19 +89,9 @@ For example, you can write code like this:
 ```Rust
 e.press(|button| {
     if button == SHOOT {
-        player_shoot();
+        current_gun().shoot(current_player().aim);
     }
 });
-
-fn player_shoot() {
-    Current::with_current(|player: &RefCell<Player>| {
-        let player = player.borrow();
-        Current::with_current(|gun: &RefCell<Gun>| {
-            let mut gun = gun.borrow_mut();
-            gun.shoot(player.aim);
-        });
-    });
-}
 ```
 
 This makes it easier to decouple data from each other in the application structure.
