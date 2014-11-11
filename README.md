@@ -3,6 +3,8 @@ current [![Build Status](https://travis-ci.org/PistonDevelopers/current.svg)](ht
 
 A library for setting current values for stack scope, such as application structure
 
+Example project: [Sea Snake Escape](https://github.com/bvssvni/rust-snake)
+
 ### How to use it
 
 Declare a function, prefixed with `current_` to indicate that a current object is used:
