@@ -1,7 +1,6 @@
 extern crate current;
 
-use current::Current;
-use std::cell::RefCell;
+use current::{ Get, Set, Current, CurrentGuard };
 
 pub struct Foo {
     text: String
@@ -37,37 +36,27 @@ impl<T: TextProperty> current::Modifier<T> for Text {
 }
 
 fn print_text<T: TextProperty>() {
-    // /*
-    let Text(text) = current::get::<T, Text>();
+    let Text(text) = Current::<T>.get();
     println!("{}", text);
-    current::set::<T, Text>(Text("world!".to_string()));
-    // */
-
-    /*
-    Current::with_current_unwrap(|val: &RefCell<T>| {
-        let mut val = val.borrow_mut();
-        println!("{}", val.get_text());
-        val.set_text("world!".to_string());
-    });
-    */
+    Current::<T>.set(Text("world!".to_string()));
 }
 
 fn bar() {
-    let bar = RefCell::new(Foo { text: "good bye".to_string() });
-    let guard = bar.set_current();
+    let mut bar = Foo { text: "good bye".to_string() };
+    let guard = CurrentGuard::new(&mut bar);
     print_text::<Foo>();
     print_text::<Foo>();
     drop(guard);
 }
 
 fn main() {
-    let foo = RefCell::new(Foo { text: "hello".to_string() });
+    let mut foo = Foo { text: "hello".to_string() };
     {
-        let guard = foo.set_current();
+        let guard = CurrentGuard::new(&mut foo);
         print_text::<Foo>();
         print_text::<Foo>();
         bar();
         drop(guard);
     }
-    foo.borrow_mut().text = "hi!".to_string();
+    foo.text = "hi!".to_string();
 }
