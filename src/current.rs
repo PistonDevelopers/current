@@ -8,8 +8,30 @@ local_data_key!(key_current: HashMap<TypeId, uint>)
 
 /// Puts back the previous current pointer.
 pub struct CurrentGuard<'a, T: 'a> {
-    _val: &'a T,
+    _val: &'a mut T,
     old_ptr: Option<uint>
+}
+
+impl<'a, T: 'static> CurrentGuard<'a, T> {
+    /// Creates a new current guard.
+    pub fn new(val: &mut T) -> CurrentGuard<T> {
+        let id = TypeId::of::<T>();
+        let ptr = val as *mut T as uint;
+        let current = key_current.replace(None);
+        let mut current = match current {
+            None => HashMap::new(),
+            Some(current) => current
+        };
+        let old_ptr = match current.entry(id) {
+            Occupied(mut entry) => Some(entry.set(ptr)),
+            Vacant(entry) => {
+                entry.set(ptr);
+                None
+            }
+        };
+        key_current.replace(Some(current));
+        CurrentGuard { old_ptr: old_ptr, _val: val }
+    }
 }
 
 #[unsafe_destructor]
@@ -34,38 +56,15 @@ impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
     }
 }
 
-/// Implemented by all concrete types to define a current value for a scope.
-pub trait Current {
-    /// Sets current mutable borrow for this concrete type.
-    fn set_current<'a>(&'a self) -> CurrentGuard<'a, Self>;
-    /// Calls closure if the current value is set.
-    fn with_current<U>(f: |&Self| -> U) -> Option<U>;
-    /// Calls closure if the current value is set.
-    /// Gives a nicer error message of the expected type.
-    fn with_current_unwrap<U>(f: |&Self| -> U) -> U;
-}
+/// The current value of a type.
+pub struct Current<T>;
 
-impl<T: 'static> Current for T {
-    fn set_current(&self) -> CurrentGuard<T> {
-        let id = TypeId::of::<T>();
-        let ptr = self as *const T as uint;
-        let current = key_current.replace(None);
-        let mut current = match current {
-            None => HashMap::new(),
-            Some(current) => current
-        };
-        let old_ptr = match current.entry(id) {
-            Occupied(mut entry) => Some(entry.set(ptr)),
-            Vacant(entry) => {
-                entry.set(ptr);
-                None
-            }
-        };
-        key_current.replace(Some(current));
-        CurrentGuard { old_ptr: old_ptr, _val: self }
-    }
-
-    fn with_current<U>(f: |&T| -> U) -> Option<U> {
+impl<T: 'static> Current<T> {
+    /// Gets mutable reference to current object.
+    /// Requires mutable reference to prevent access to globals in safe code,
+    /// and to prevent mutable borrows of same value in scope.
+    /// Is unsafe because returned reference inherits lifetime from argument.
+    pub unsafe fn current(&mut self) -> Option<&mut T> {
         use std::mem::transmute;
         let id = TypeId::of::<T>();
         let current = match key_current.replace(None) {
@@ -77,17 +76,38 @@ impl<T: 'static> Current for T {
             Some(x) => *x
         };
         key_current.replace(Some(current));
-        Some(f(unsafe { transmute(ptr as *const T) }))
+        transmute(ptr as *mut T)
     }
 
-    fn with_current_unwrap<U>(f: |&T| -> U) -> U {
-        match Current::with_current(f) {
+    /// Unwraps mutable reference to current object,
+    /// but with nicer error message.
+    pub unsafe fn current_unwrap(&mut self) -> &mut T {
+        match self.current() {
             None => {
                 use std::intrinsics::get_tydesc;
-                let name = unsafe { (*get_tydesc::<T>()).name };
+                let name = (*get_tydesc::<T>()).name;
                 panic!("No current `{}` is set", name);
             }
             Some(x) => x
         }
+    }
+}
+
+impl<T: 'static> Deref<T> for Current<T> {
+    #[inline(always)]
+    fn deref<'a>(&'a self) -> &'a T {
+        use std::mem::transmute;
+        unsafe {
+            // Current does not contain anything,
+            // so it is safe to transmute to mutable.
+            transmute::<_, &'a mut Current<T>>(self).current_unwrap()
+        }
+    }
+}
+
+impl<T: 'static> DerefMut<T> for Current<T> {
+    #[inline(always)]
+    fn deref_mut<'a>(&'a mut self) -> &'a mut T {
+        unsafe { self.current_unwrap() }
     }
 }
