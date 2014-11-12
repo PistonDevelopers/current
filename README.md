@@ -10,16 +10,15 @@ Example project: [Sea Snake Escape](https://github.com/bvssvni/rust-snake)
 Declare a function, prefixed with `current_` to indicate that a current object is used:
 
 ```Rust
-fn current_window() -> Usage<'static, Window> { UseCurrent }
+fn current_window() -> Current<Window> { Current }
 ```
 
 When you want to use the current object in a function, you do this:
 
 ```Rust
-let window = RefCell::new(window); // create a shared reference to the object
-let window_guard = window.set_current();
+let window = CurrentGuard::new(&mut window); // make window current object
 start(); // function that uses the current object.
-drop(window_guard);
+drop(window_guard); // put back old current object
 ```
 
 Inside the function where you use the current object, you can call the function and use it as an object:
@@ -31,7 +30,7 @@ fn start() {
 }
 ```
 
-This works because the `Usage` enum implements `Deref` and `DerefMut` which gets a reference to the current object for the scope it is used.
+This works because the `Current` implements `Deref` and `DerefMut` which gets a reference to the current object for the scope it is used.
 
 You can also assign a new value to the current object and get a copy if the object implements `Copy`:
 
