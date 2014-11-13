@@ -76,7 +76,7 @@ impl<T: 'static> Current<T> {
             Some(x) => *x
         };
         key_current.replace(Some(current));
-        transmute(ptr as *mut T)
+        Some(transmute(ptr as *mut T))
     }
 
     /// Unwraps mutable reference to current object,
