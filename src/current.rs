@@ -71,11 +71,9 @@ impl<T: 'static> Current<T> {
             None => { return None; }
             Some(current) => current
         };
-        let ptr = match current.get(&id) {
-            None => { return None; }
-            Some(x) => *x
-        };
+        let ptr: Option<uint> = current.get(&id).map(|id| *id);
         key_current.replace(Some(current));
+        let ptr = match ptr { None => { return None; } Some(x) => x };
         Some(transmute(ptr as *mut T))
     }
 
