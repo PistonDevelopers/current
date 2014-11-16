@@ -67,3 +67,4 @@ This makes it easier to decouple data from each other in the application structu
 
 The major motivation for this library is to have a convention that works across libraries.
 
+[How to contribute](https://github.com/PistonDevelopers/piston/blob/master/CONTRIBUTING.md)
