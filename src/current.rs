@@ -1,10 +1,11 @@
-
+use std::cell::RefCell;
 use std::intrinsics::TypeId;
 use std::collections::HashMap;
 use std::collections::hash_map::{ Occupied, Vacant };
 
 // Stores the current pointers for concrete types.
-local_data_key!(key_current: HashMap<TypeId, uint>)
+thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, uint>> 
+    = RefCell::new(HashMap::new()))
 
 /// Puts back the previous current pointer.
 pub struct CurrentGuard<'a, T: 'a> {
@@ -17,19 +18,15 @@ impl<'a, T: 'static> CurrentGuard<'a, T> {
     pub fn new(val: &mut T) -> CurrentGuard<T> {
         let id = TypeId::of::<T>();
         let ptr = val as *mut T as uint;
-        let current = key_current.replace(None);
-        let mut current = match current {
-            None => HashMap::new(),
-            Some(current) => current
-        };
-        let old_ptr = match current.entry(id) {
-            Occupied(mut entry) => Some(entry.set(ptr)),
-            Vacant(entry) => {
-                entry.set(ptr);
-                None
+        let old_ptr = KEY_CURRENT.with(|current| {
+            match current.borrow_mut().entry(id) {
+                Occupied(mut entry) => Some(entry.set(ptr)),
+                Vacant(entry) => {
+                    entry.set(ptr);
+                    None
+                }
             }
-        };
-        key_current.replace(Some(current));
+        });
         CurrentGuard { old_ptr: old_ptr, _val: val }
     }
 }
@@ -38,21 +35,22 @@ impl<'a, T: 'static> CurrentGuard<'a, T> {
 impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
     fn drop(&mut self) {
         let id = TypeId::of::<T>();
-        let mut current = key_current.replace(None).unwrap();
         match self.old_ptr {
             None => {
-                current.remove(&id);
-                key_current.replace(Some(current));
+                KEY_CURRENT.with(|current| {
+                    current.borrow_mut().remove(&id);
+                });
                 return;
             }
             Some(old_ptr) => {
-                match current.entry(id) {
-                    Occupied(mut entry) => { entry.set(old_ptr); }
-                    Vacant(entry) => { entry.set(old_ptr); }
-                };
+                KEY_CURRENT.with(|current| {
+                    match current.borrow_mut().entry(id) {
+                        Occupied(mut entry) => { entry.set(old_ptr); }
+                        Vacant(entry) => { entry.set(old_ptr); }
+                    };
+                });
             }
         };
-        key_current.replace(Some(current));
     }
 }
 
@@ -67,12 +65,9 @@ impl<T: 'static> Current<T> {
     pub unsafe fn current(&mut self) -> Option<&mut T> {
         use std::mem::transmute;
         let id = TypeId::of::<T>();
-        let current = match key_current.replace(None) {
-            None => { return None; }
-            Some(current) => current
-        };
-        let ptr: Option<uint> = current.get(&id).map(|id| *id);
-        key_current.replace(Some(current));
+        let ptr: Option<uint> = KEY_CURRENT.with(|current| {
+                current.borrow().get(&id).map(|id| *id)
+            });
         let ptr = match ptr { None => { return None; } Some(x) => x };
         Some(transmute(ptr as *mut T))
     }
