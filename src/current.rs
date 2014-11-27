@@ -1,75 +1,86 @@
 use std::cell::RefCell;
-use std::intrinsics::TypeId;
-use std::collections::HashMap;
-use std::collections::hash_map::{ Occupied, Vacant };
+use std::thread_local::scoped::Key;
 
-// Stores the current pointers for concrete types.
-thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, uint>> 
-    = RefCell::new(HashMap::new()))
-
-/// Puts back the previous current pointer.
-pub struct CurrentGuard<'a, T: 'a> {
-    _val: &'a mut T,
-    old_ptr: Option<uint>
+/// Convenience method for setting up current objects for a scope
+///
+/// Requires scoped thread local objects
+///
+/// ```ignore
+/// scoped_thread_local!(static FOO: RefCell<Foo>)
+/// scoped_thread_local!(static BAR: RefCell<Bar>)
+/// scoped_thread_local!(static BAZ: RefCell<Baz>)
+///
+/// let foo = ...;
+/// let bar = ...;
+/// let baz = ...;
+///
+/// let foo = RefCell::new(foo);
+/// let bar = RefCell::new(bar);
+/// let baz = RefCell::new(baz);
+/// current! {
+///     FOO: foo,
+///     BAR: bar,
+///     BAZ: baz
+///     || start()
+/// }
+/// ```
+#[macro_export]
+macro_rules! current {
+    (|| $f:expr) => {{
+        $f
+    }};
+    ($HEAD:ident: $head:ident $(,$TAIL:ident: $tail:ident)* || $f:expr) => {{
+        $HEAD.set(&$head, || {
+            current!{ $($TAIL: $tail),* || $f }
+        })
+    }};
 }
 
-impl<'a, T: 'static> CurrentGuard<'a, T> {
-    /// Creates a new current guard.
-    pub fn new(val: &mut T) -> CurrentGuard<T> {
-        let id = TypeId::of::<T>();
-        let ptr = val as *mut T as uint;
-        let old_ptr = KEY_CURRENT.with(|current| {
-            match current.borrow_mut().entry(id) {
-                Occupied(mut entry) => Some(entry.set(ptr)),
-                Vacant(entry) => {
-                    entry.set(ptr);
-                    None
-                }
-            }
-        });
-        CurrentGuard { old_ptr: old_ptr, _val: val }
-    }
+/// Unsafe convenience wrapper for scoped thread local shared objects
+///
+/// This should be used with caution since calling methods
+/// that take `&mut self` risks creating multiple mutable borrows.
+///
+/// Recommended way of using it is to create an unsafe function
+/// and never assign to a variable outside an outside block.
+///
+/// ```ignore
+/// scoped_thread_local!(pub static FOO: RefCell<Foo>)
+///
+/// pub unsafe fn current_foo() -> Current<Foo> { Current::new(&FOO) }
+///
+/// unsafe {
+///     current_foo().bar();
+/// }
+/// ```
+///
+/// Can not be moved across tasks to prevent logic errors
+/// when attempting to move an object that uses a current object.
+pub struct Current<T: 'static> {
+    /// The scoped thread local key containing object.
+    key: &'static Key<RefCell<T>>,
+    marker: ::std::kinds::marker::NoSync,
 }
-
-#[unsafe_destructor]
-impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
-    fn drop(&mut self) {
-        let id = TypeId::of::<T>();
-        match self.old_ptr {
-            None => {
-                KEY_CURRENT.with(|current| {
-                    current.borrow_mut().remove(&id);
-                });
-                return;
-            }
-            Some(old_ptr) => {
-                KEY_CURRENT.with(|current| {
-                    match current.borrow_mut().entry(id) {
-                        Occupied(mut entry) => { entry.set(old_ptr); }
-                        Vacant(entry) => { entry.set(old_ptr); }
-                    };
-                });
-            }
-        };
-    }
-}
-
-/// The current value of a type.
-pub struct Current<T>;
 
 impl<T: 'static> Current<T> {
+    /// Creates a new current object object.
+    pub unsafe fn new(key: &'static Key<RefCell<T>>) -> Current<T> {
+        Current { key: key, marker: ::std::kinds::marker::NoSync }
+    }
+
     /// Gets mutable reference to current object.
     /// Requires mutable reference to prevent access to globals in safe code,
     /// and to prevent mutable borrows of same value in scope.
     /// Is unsafe because returned reference inherits lifetime from argument.
     pub unsafe fn current(&mut self) -> Option<&mut T> {
         use std::mem::transmute;
-        let id = TypeId::of::<T>();
-        let ptr: Option<uint> = KEY_CURRENT.with(|current| {
-                current.borrow().get(&id).map(|id| *id)
-            });
-        let ptr = match ptr { None => { return None; } Some(x) => x };
-        Some(transmute(ptr as *mut T))
+        if self.key.is_set() {
+            self.key.with(|key| {
+                Some(transmute(key.borrow_mut().deref_mut()))
+            })
+        } else {
+            None
+        }
     }
 
     /// Unwraps mutable reference to current object,
@@ -104,3 +115,4 @@ impl<T: 'static> DerefMut<T> for Current<T> {
         unsafe { self.current_unwrap() }
     }
 }
+
