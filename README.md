@@ -16,7 +16,7 @@ unsafe fn current_window() -> Current<Window> { Current }
 When you want to use the current object in a function, you do this:
 
 ```Rust
-let window = CurrentGuard::new(&mut window); // make window current object
+let window_guard = CurrentGuard::new(&mut window); // make window current object
 start(); // function that uses the current object.
 drop(window_guard); // put back old current object
 ```
