@@ -10,18 +10,20 @@ use std::thread_local::scoped::Key;
 /// scoped_thread_local!(static BAR: RefCell<Bar>)
 /// scoped_thread_local!(static BAZ: RefCell<Baz>)
 ///
-/// let foo = ...;
-/// let bar = ...;
-/// let baz = ...;
+/// fn main() {
+///     let foo = ...;
+///     let bar = ...;
+///     let baz = ...;
 ///
-/// let foo = RefCell::new(foo);
-/// let bar = RefCell::new(bar);
-/// let baz = RefCell::new(baz);
-/// current! {
-///     FOO: foo,
-///     BAR: bar,
-///     BAZ: baz
-///     || start()
+///     let foo = RefCell::new(foo);
+///     let bar = RefCell::new(bar);
+///     let baz = RefCell::new(baz);
+///     current! {
+///         FOO: foo,
+///         BAR: bar,
+///         BAZ: baz
+///         || start()
+///     }
 /// }
 /// ```
 #[macro_export]
