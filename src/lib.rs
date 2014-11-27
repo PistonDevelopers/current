@@ -1,11 +1,12 @@
 #![license = "MIT"]
 #![deny(missing_docs)]
 #![feature(unsafe_destructor)]
+#![feature(macro_rules)]
 
 //! A library for setting current values for stack scope,
 //! such as application structure.
 
-pub use current::{ Current, CurrentGuard };
+pub use current::Current;
 
 use std::cell::RefCell;
 
