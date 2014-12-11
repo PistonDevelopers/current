@@ -1,4 +1,3 @@
-#![license = "MIT"]
 #![deny(missing_docs)]
 #![feature(unsafe_destructor)]
 #![feature(macro_rules)]

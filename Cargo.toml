@@ -1,12 +1,17 @@
 [package]
 
-name = "current"
+name = "pistoncore-current"
 version = "0.0.0"
 authors = [
     "bvssvni <bvssvni@gmail.com>",
     "Jonathan Reem <jonathan.reem@gmail.com>"
 ]
-tags = []
+tags = ["globals", "singleton", "current", "ducktyping", "game"]
+description = "A library for setting current values for stack scope, such as application structure"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/pistondevelopers/current.git"
+homepage = "https://github.com/pistondevelopers/current"
 
 [lib]
 
