@@ -1,6 +1,9 @@
-extern crate current;
+#![feature(phase)]
 
-use current::{ Get, Set, Current, CurrentGuard };
+#[phase(plugin, link)] extern crate current;
+
+use std::cell::RefCell;
+use current::{ Get, Set, Current };
 
 pub struct Foo {
     text: String
@@ -35,28 +38,63 @@ impl<T: TextProperty> current::Modifier<T> for Text {
     }
 }
 
-fn print_text<T: TextProperty>() {
-    let Text(text) = Current::<T>.get();
-    println!("{}", text);
-    Current::<T>.set(Text("world!".to_string()));
+fn print_text() {
+    unsafe {
+        let Text(text) = current_foo().get();
+        println!("{}", text);
+        current_foo().set(Text("world!".to_string()));
+    }
 }
 
 fn bar() {
-    let mut bar = Foo { text: "good bye".to_string() };
-    let guard = CurrentGuard::new(&mut bar);
-    print_text::<Foo>();
-    print_text::<Foo>();
-    drop(guard);
+    let bar = Foo { text: "good bye".to_string() };
+    let bar_2 = Foo { text: "good bye".to_string() };
+
+    let bar = RefCell::new(bar);
+    let bar_2 = RefCell::new(bar_2);
+    current! {
+        FOO: bar,
+        FOO_2: bar_2
+        || {
+            print_text();
+            print_text();
+        }
+    }
+
+    /*
+    let bar = RefCell::new(bar);
+    let bar_2 = RefCell::new(bar_2);
+    FOO.set(&bar, || {
+        FOO_2.set(&bar_2, || {
+            print_text();
+            print_text();
+        });
+    });
+    */
+}
+
+scoped_thread_local!(static FOO: RefCell<Foo>)
+scoped_thread_local!(static FOO_2: RefCell<Foo>)
+
+unsafe fn current_foo() -> Current<Foo> {
+    Current::new(&FOO)
+}
+
+#[allow(dead_code)]
+unsafe fn current_foo_2() -> Current<Foo> {
+    Current::new(&FOO_2)
 }
 
 fn main() {
     let mut foo = Foo { text: "hello".to_string() };
-    {
-        let guard = CurrentGuard::new(&mut foo);
-        print_text::<Foo>();
-        print_text::<Foo>();
-        bar();
-        drop(guard);
-    }
+    foo = {
+        let foo = RefCell::new(foo);
+        FOO.set(&foo, || {
+            print_text();
+            print_text();
+            bar();
+        });
+        foo.into_inner()
+    };
     foo.text = "hi!".to_string();
 }
