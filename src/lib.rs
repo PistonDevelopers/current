@@ -1,11 +1,10 @@
 #![deny(missing_docs)]
 #![feature(unsafe_destructor)]
-#![feature(macro_rules)]
 
 //! A library for setting current values for stack scope,
 //! such as application structure.
 
-pub use current::Current;
+pub use current::{ Current, CurrentGuard };
 
 use std::cell::RefCell;
 
@@ -18,7 +17,7 @@ impl<F: 'static, T: Modifier<F>> Modifier<Current<F>> for T {
     }
 }
 
-impl<T: Get<U>, U> Get<U> for Current<T> {
+impl<T: 'static + Get<U>, U> Get<U> for Current<T> {
     #[inline(always)]
     fn get(&self) -> U {
         (*self).deref().get()
