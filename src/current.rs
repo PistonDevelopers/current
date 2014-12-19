@@ -5,7 +5,7 @@ use std::collections::hash_map::{ Occupied, Vacant };
 
 // Stores the current pointers for concrete types.
 thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, uint>> 
-    = RefCell::new(HashMap::new()))
+    = RefCell::new(HashMap::new()));
 
 /// Puts back the previous current pointer.
 pub struct CurrentGuard<'a, T: 'a> {
