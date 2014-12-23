@@ -10,7 +10,7 @@ Example project: [Sea Snake Escape](https://github.com/bvssvni/rust-snake)
 Declare an unsafe function, prefixed with `current_` to indicate that a current object is used:
 
 ```Rust
-unsafe fn current_window() -> Current<Window> { Current }
+unsafe fn current_window() -> Current<Window> { Current::new() }
 ```
 
 When you want to use the current object in a function, you do this:
@@ -25,7 +25,7 @@ Inside the function where you use the current object, you can call the function 
 
 ```Rust
 fn start() {
-    unsafe { current_window().set_title("Hello"); }
+    unsafe { current_window() }.set_title("Hello");
     ...
 }
 ```
