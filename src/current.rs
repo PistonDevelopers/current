@@ -55,9 +55,12 @@ impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
 }
 
 /// The current value of a type.
-pub struct Current<T>;
+pub struct Current<T>(());
 
 impl<T: 'static> Current<T> {
+    /// Creates a new current object
+    pub unsafe fn new() -> Current<T> { Current(()) }
+
     /// Gets mutable reference to current object.
     /// Requires mutable reference to prevent access to globals in safe code,
     /// and to prevent mutable borrows of same value in scope.
