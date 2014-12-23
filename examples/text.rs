@@ -36,9 +36,9 @@ impl<T: TextProperty> current::Modifier<T> for Text {
 }
 
 fn print_text<T: 'static + TextProperty>() {
-    let Text(text) = Current::<T>.get();
+    let Text(text) = unsafe { Current::<T>::new() }.get();
     println!("{}", text);
-    Current::<T>.set(Text("world!".to_string()));
+    unsafe { Current::<T>::new() }.set(Text("world!".to_string()));
 }
 
 fn bar() {
