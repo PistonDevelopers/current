@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::intrinsics::TypeId;
 use std::collections::HashMap;
-use std::collections::hash_map::{ Occupied, Vacant };
+use std::collections::hash_map::Entry::{ Occupied, Vacant };
 
 // Stores the current pointers for concrete types.
 thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, uint>> 
