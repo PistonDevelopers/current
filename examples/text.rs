@@ -22,14 +22,14 @@ impl TextProperty for Foo {
 
 pub struct Text(pub String);
 
-impl<T: TextProperty> current::Get<Text> for T {
-    fn get(&self) -> Text {
-        Text(self.get_text().to_string())
+impl<T: TextProperty> current::GetFrom<T> for Text {
+    fn get_from(obj: &T) -> Text {
+        Text(obj.get_text().to_string())
     }
 }
 
-impl<T: TextProperty> current::Modifier<T> for Text {
-    fn modify(self, obj: &mut T) {
+impl<T: TextProperty> current::SetAt<T> for Text {
+    fn set_at(self, obj: &mut T) {
         let Text(text) = self;
         obj.set_text(text)
     }
