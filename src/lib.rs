@@ -32,68 +32,112 @@ impl DANGER {
     pub unsafe fn new() -> DANGER { DANGER(()) }
 }
 
-impl<F: 'static, T: Modifier<F>> Modifier<Current<F>> for T {
+impl<F: 'static, T: SetAt<F>> SetAt<Current<F>> for T {
     #[inline(always)]
-    fn modify(self, obj: &mut Current<F>) {
-        self.modify((*obj).deref_mut());
+    fn set_at(self, obj: &mut Current<F>) {
+        self.set_at((*obj).deref_mut());
     }
 }
 
-impl<T: 'static + Get<U>, U> Get<U> for Current<T> {
+impl<F: 'static, T: ActOn<F, U>, U> ActOn<Current<F>, U> for T {
     #[inline(always)]
-    fn get(&self) -> U {
-        (*self).deref().get()
+    fn act_on(self, obj: &mut Current<F>) -> U {
+        self.act_on((*obj).deref_mut())
     }
 }
 
-impl<'a, T: Get<U>, U> Get<U> for &'a RefCell<T> {
+impl<T: 'static, U: GetFrom<T>> GetFrom<Current<T>> for U {
     #[inline(always)]
-    fn get(&self) -> U {
-        self.borrow().deref().get()
+    fn get_from(obj: &Current<T>) -> U {
+        GetFrom::get_from((*obj).deref())
     }
 }
 
-impl<'a, F, T: Modifier<F>> Modifier<&'a RefCell<F>> for T {
+impl<'a, T, U: GetFrom<T>> GetFrom<&'a RefCell<T>> for U {
     #[inline(always)]
-    fn modify(self, obj: &mut &'a RefCell<F>) {
-        self.modify(obj.borrow_mut().deref_mut())
+    fn get_from(obj: & &'a RefCell<T>) -> U {
+        GetFrom::get_from(obj.borrow().deref())
     }
 }
 
-/// Allows use of the implemented type as an argument to Set::set.
-///
-/// This allows types to be used for ad-hoc overloading of Set::set
-/// to perform complex updates to the parameter of Modifier.
-pub trait Modifier<F> {
+impl<'a, F, T: SetAt<F>> SetAt<&'a RefCell<F>> for T {
+    #[inline(always)]
+    fn set_at(self, obj: &mut &'a RefCell<F>) {
+        self.set_at(obj.borrow_mut().deref_mut())
+    }
+}
+
+impl<'a, F, T: ActOn<F, U>, U> ActOn<&'a RefCell<F>, U> for T {
+    #[inline(always)]
+    fn act_on(self, obj: &mut &'a RefCell<F>) -> U {
+        self.act_on(obj.borrow_mut().deref_mut())
+    }
+}
+
+/// Something that can be set at an object.
+pub trait SetAt<F> {
     /// Modify `F` with self.
-    fn modify(self, &mut F);
+    fn set_at(self, &mut F);
 }
 
-/// A blanket trait providing the set and set_mut methods for all types.
-pub trait Set<M> {
-    /// Modify self using the provided modifier.
-    fn set(mut self, modifier: M) -> Self;
+/// Automatically implemented through the `SetAt` trait.
+pub trait Set<T> {
+    /// Set value.
+    fn set(mut self, val: T) -> Self;
 
-    /// Modify self through a mutable reference with the provided modifier.
-    fn set_mut(&mut self, modifier: M) -> &mut Self;
+    /// Set value through mutable reference.
+    fn set_mut(&mut self, val: T) -> &mut Self;
 }
 
-impl<T, U: Modifier<T>> Set<U> for T {
+impl<T, U: SetAt<T>> Set<U> for T {
     #[inline(always)]
-    fn set(mut self, modifier: U) -> T {
-        modifier.modify(&mut self);
+    fn set(mut self, val: U) -> T {
+        val.set_at(&mut self);
         self
     }
 
     #[inline(always)]
-    fn set_mut(&mut self, modifier: U) -> &mut T {
-        modifier.modify(self);
+    fn set_mut(&mut self, val: U) -> &mut T {
+        val.set_at(self);
         self
     }
 }
 
-/// Implemented by types that can be constructed from another value.
+/// Something that can be retrieved from another object.
+pub trait GetFrom<T> {
+    /// Gets value from object.
+    fn get_from(obj: &T) -> Self;
+}
+
+/// Automatically implemented through the `GetFrom` trait.
 pub trait Get<T> {
     /// Returns new value.
     fn get(&self) -> T;
 }
+
+impl<T, U: GetFrom<T>> Get<U> for T {
+    #[inline(always)]
+    fn get(&self) -> U {
+        GetFrom::get_from(self)
+    }
+}
+
+/// Does something to an object.
+pub trait ActOn<T, U> {
+    /// Does something to an object.
+    fn act_on(self, &mut T) -> U;
+}
+
+/// Automatically implemented through the `ActOn` trait.
+pub trait Action<T, U> {
+    /// Does something.
+    fn action(&mut self, val: T) -> U;
+}
+
+impl<T, U: ActOn<T, V>, V> Action<U, V> for T {
+    #[inline(always)]
+    fn action(&mut self, val: U) -> V {
+        val.act_on(self)
+    }
+}
+
