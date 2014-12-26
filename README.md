@@ -3,7 +3,7 @@ current [![Build Status](https://travis-ci.org/PistonDevelopers/current.svg)](ht
 
 A library for setting current values for stack scope, such as application structure
 
-Example project: [Sea Snake Escape](https://github.com/bvssvni/rust-snake)
+Example project: [Sea Birds' Breakfast](https://github.com/bvssvni/ld31)
 
 ### How to use it
 
