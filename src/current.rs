@@ -8,13 +8,16 @@ thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, uint>>
     = RefCell::new(HashMap::new()));
 
 /// Puts back the previous current pointer.
+#[unstable]
 pub struct CurrentGuard<'a, T: 'a> {
     _val: &'a mut T,
     old_ptr: Option<uint>
 }
 
+#[unstable]
 impl<'a, T: 'static> CurrentGuard<'a, T> {
     /// Creates a new current guard.
+    #[unstable]
     pub fn new(val: &mut T) -> CurrentGuard<T> {
         let id = TypeId::of::<T>();
         let ptr = val as *mut T as uint;
@@ -55,16 +58,20 @@ impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
 }
 
 /// The current value of a type.
+#[unstable]
 pub struct Current<T>(());
 
+#[unstable]
 impl<T: 'static> Current<T> {
     /// Creates a new current object
+    #[unstable]
     pub unsafe fn new() -> Current<T> { Current(()) }
 
     /// Gets mutable reference to current object.
     /// Requires mutable reference to prevent access to globals in safe code,
     /// and to prevent mutable borrows of same value in scope.
     /// Is unsafe because returned reference inherits lifetime from argument.
+    #[unstable]
     pub unsafe fn current(&mut self) -> Option<&mut T> {
         use std::mem::transmute;
         let id = TypeId::of::<T>();
@@ -77,6 +84,7 @@ impl<T: 'static> Current<T> {
 
     /// Unwraps mutable reference to current object,
     /// but with nicer error message.
+    #[unstable]
     pub unsafe fn current_unwrap(&mut self) -> &mut T {
         match self.current() {
             None => {

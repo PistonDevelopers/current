@@ -1,5 +1,6 @@
 #![deny(missing_docs)]
 #![feature(unsafe_destructor)]
+#![unstable]
 
 //! A library for setting current values for stack scope,
 //! such as application structure.
@@ -24,11 +25,14 @@ mod current;
 /// It can not be copied, so an unsafe block is required
 /// whenever it is used.
 #[allow(missing_copy_implementations)]
+#[unstable]
 pub struct DANGER(());
 
+#[unstable]
 impl DANGER {
     /// Creates a new warning sign for functions
     /// that normally works with safe code
+    #[unstable]
     pub unsafe fn new() -> DANGER { DANGER(()) }
 }
 
@@ -75,12 +79,14 @@ impl<'a, F, T: ActOn<F, U>, U> ActOn<&'a RefCell<F>, U> for T {
 }
 
 /// Something that can be set at an object.
+#[unstable]
 pub trait SetAt<F> {
     /// Modify `F` with self.
     fn set_at(self, &mut F);
 }
 
 /// Automatically implemented through the `SetAt` trait.
+#[unstable]
 pub trait Set<T> {
     /// Set value.
     fn set(mut self, val: T) -> Self;
@@ -104,12 +110,14 @@ impl<T, U: SetAt<T>> Set<U> for T {
 }
 
 /// Something that can be retrieved from another object.
+#[unstable]
 pub trait GetFrom<T> {
     /// Gets value from object.
     fn get_from(obj: &T) -> Self;
 }
 
 /// Automatically implemented through the `GetFrom` trait.
+#[unstable]
 pub trait Get<T> {
     /// Returns new value.
     fn get(&self) -> T;
@@ -123,12 +131,14 @@ impl<T, U: GetFrom<T>> Get<U> for T {
 }
 
 /// Does something to an object.
+#[unstable]
 pub trait ActOn<T, U> {
     /// Does something to an object.
     fn act_on(self, &mut T) -> U;
 }
 
 /// Automatically implemented through the `ActOn` trait.
+#[unstable]
 pub trait Action<T, U> {
     /// Does something.
     fn action(&mut self, val: T) -> U;
