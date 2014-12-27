@@ -43,7 +43,7 @@ This can also be done with more advanced objects, because Rust calls `drop` and 
 
 Read more in the issue for [Best coding practices with current objects](https://github.com/PistonDevelopers/current/issues/15)
 
-### Why?
+### Motivation
 
 In game programming, there are many kinds of "current" values:
 
@@ -58,7 +58,7 @@ For example, you can write code like this:
 ```Rust
 e.press(|button| {
     if button == SHOOT {
-        current_gun().shoot(current_player().aim);
+        unsafe { current_gun() }.shoot(unsafe { current_player() }.aim);
     }
 });
 ```
