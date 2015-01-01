@@ -7,6 +7,7 @@
 
 pub use current::{ Current, CurrentGuard };
 
+use std::rc::Rc;
 use std::cell::RefCell;
 
 mod current;
@@ -64,6 +65,13 @@ impl<'a, T, U: GetFrom<T>> GetFrom<&'a RefCell<T>> for U {
     }
 }
 
+impl<T, U: GetFrom<T>> GetFrom<Rc<RefCell<T>>> for U {
+    #[inline(always)]
+    fn get_from(obj: &Rc<RefCell<T>>) -> U {
+        GetFrom::get_from(obj.borrow().deref())
+    }
+}
+
 impl<'a, F, T: SetAt<F>> SetAt<&'a RefCell<F>> for T {
     #[inline(always)]
     fn set_at(self, obj: &mut &'a RefCell<F>) {
@@ -71,9 +79,24 @@ impl<'a, F, T: SetAt<F>> SetAt<&'a RefCell<F>> for T {
     }
 }
 
+impl<F, T: SetAt<F>> SetAt<Rc<RefCell<F>>> for T {
+    #[inline(always)]
+    fn set_at(self, obj: &mut Rc<RefCell<F>>) {
+        self.set_at(obj.borrow_mut().deref_mut())
+    }
+}
+
+
 impl<'a, F, T: ActOn<F, U>, U> ActOn<&'a RefCell<F>, U> for T {
     #[inline(always)]
     fn act_on(self, obj: &mut &'a RefCell<F>) -> U {
+        self.act_on(obj.borrow_mut().deref_mut())
+    }
+}
+
+impl<F, T: ActOn<F, U>, U> ActOn<Rc<RefCell<F>>, U> for T {
+    #[inline(always)]
+    fn act_on(self, obj: &mut Rc<RefCell<F>>) -> U {
         self.act_on(obj.borrow_mut().deref_mut())
     }
 }
