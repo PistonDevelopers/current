@@ -1,51 +1,22 @@
 extern crate current;
 
-use current::{ Get, Set, Current, CurrentGuard };
+use current::{ Current, CurrentGuard };
 
 pub struct Foo {
     text: String
 }
 
-pub trait TextProperty {
-    fn get_text(&self) -> &str;
-    fn set_text(&mut self, text: String);
-}
-
-impl TextProperty for Foo {
-    fn get_text(&self) -> &str {
-        self.text.as_slice()
-    }
-    fn set_text(&mut self, text: String) {
-        self.text = text;
-    }
-}
-
-pub struct Text(pub String);
-
-impl<T: TextProperty> current::GetFrom<T> for Text {
-    fn get_from(obj: &T) -> Text {
-        Text(obj.get_text().to_string())
-    }
-}
-
-impl<T: TextProperty> current::SetAt<T> for Text {
-    fn set_at(self, obj: &mut T) {
-        let Text(text) = self;
-        obj.set_text(text)
-    }
-}
-
-fn print_text<T: 'static + TextProperty>() {
-    let Text(text) = unsafe { Current::<T>::new() }.get();
-    println!("{}", text);
-    unsafe { Current::<T>::new() }.set(Text("world!".to_string()));
+fn print_foo() {
+    let foo = unsafe { &*Current::<Foo>::new() };
+    println!("{}", foo.text);
+    unsafe { &mut *Current::<Foo>::new() }.text = "world!".to_string();
 }
 
 fn bar() {
     let mut bar = Foo { text: "good bye".to_string() };
     let guard = CurrentGuard::new(&mut bar);
-    print_text::<Foo>();
-    print_text::<Foo>();
+    print_foo();
+    print_foo();
     drop(guard);
 }
 
@@ -53,8 +24,8 @@ fn main() {
     let mut foo = Foo { text: "hello".to_string() };
     {
         let guard = CurrentGuard::new(&mut foo);
-        print_text::<Foo>();
-        print_text::<Foo>();
+        print_foo();
+        print_foo();
         bar();
         drop(guard);
     }

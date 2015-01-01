@@ -37,27 +37,6 @@ impl DANGER {
     pub unsafe fn new() -> DANGER { DANGER(()) }
 }
 
-impl<F: 'static, T: SetAt<F>> SetAt<Current<F>> for T {
-    #[inline(always)]
-    fn set_at(self, obj: &mut Current<F>) {
-        self.set_at((*obj).deref_mut());
-    }
-}
-
-impl<F: 'static, T: ActOn<F, U>, U> ActOn<Current<F>, U> for T {
-    #[inline(always)]
-    fn act_on(self, obj: &mut Current<F>) -> U {
-        self.act_on((*obj).deref_mut())
-    }
-}
-
-impl<T: 'static, U: GetFrom<T>> GetFrom<Current<T>> for U {
-    #[inline(always)]
-    fn get_from(obj: &Current<T>) -> U {
-        GetFrom::get_from((*obj).deref())
-    }
-}
-
 impl<'a, T, U: GetFrom<T>> GetFrom<&'a RefCell<T>> for U {
     #[inline(always)]
     fn get_from(obj: & &'a RefCell<T>) -> U {
