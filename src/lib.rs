@@ -12,31 +12,6 @@ use std::cell::RefCell;
 
 mod current;
 
-/// Used as warning sign for functions
-/// that under normal circumstances works with safe code,
-/// but in some edge cases are unsafe.
-///
-/// 1. The function MUST take `DANGER` as first argument.
-///
-/// 2. The function MUST take ownership of the value.
-///
-/// 3. The function docs MUST include a notice `### DANGER`
-/// describing the edge case.
-///
-/// It can not be copied, so an unsafe block is required
-/// whenever it is used.
-#[allow(missing_copy_implementations)]
-#[unstable]
-pub struct DANGER(());
-
-#[unstable]
-impl DANGER {
-    /// Creates a new warning sign for functions
-    /// that normally works with safe code
-    #[unstable]
-    pub unsafe fn new() -> DANGER { DANGER(()) }
-}
-
 impl<'a, T, U: GetFrom<T>> GetFrom<&'a RefCell<T>> for U {
     #[inline(always)]
     fn get_from(obj: & &'a RefCell<T>) -> U {
