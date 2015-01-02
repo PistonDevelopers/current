@@ -5,126 +5,120 @@
 //! A library for setting current values for stack scope,
 //! such as application structure.
 
-pub use current::{ Current, CurrentGuard };
-
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::intrinsics::TypeId;
+use std::collections::HashMap;
+use std::collections::hash_map::Entry::{ Occupied, Vacant };
 
-mod current;
+// Stores the current pointers for concrete types.
+thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, uint>> 
+    = RefCell::new(HashMap::new()));
 
-impl<'a, T, U: GetFrom<T>> GetFrom<&'a RefCell<T>> for U {
-    #[inline(always)]
-    fn get_from(obj: & &'a RefCell<T>) -> U {
-        GetFrom::get_from(obj.borrow().deref())
-    }
-}
-
-impl<T, U: GetFrom<T>> GetFrom<Rc<RefCell<T>>> for U {
-    #[inline(always)]
-    fn get_from(obj: &Rc<RefCell<T>>) -> U {
-        GetFrom::get_from(obj.borrow().deref())
-    }
-}
-
-impl<'a, F, T: SetAt<F>> SetAt<&'a RefCell<F>> for T {
-    #[inline(always)]
-    fn set_at(self, obj: &mut &'a RefCell<F>) {
-        self.set_at(obj.borrow_mut().deref_mut())
-    }
-}
-
-impl<F, T: SetAt<F>> SetAt<Rc<RefCell<F>>> for T {
-    #[inline(always)]
-    fn set_at(self, obj: &mut Rc<RefCell<F>>) {
-        self.set_at(obj.borrow_mut().deref_mut())
-    }
-}
-
-
-impl<'a, F, T: ActOn<F, U>, U> ActOn<&'a RefCell<F>, U> for T {
-    #[inline(always)]
-    fn act_on(self, obj: &mut &'a RefCell<F>) -> U {
-        self.act_on(obj.borrow_mut().deref_mut())
-    }
-}
-
-impl<F, T: ActOn<F, U>, U> ActOn<Rc<RefCell<F>>, U> for T {
-    #[inline(always)]
-    fn act_on(self, obj: &mut Rc<RefCell<F>>) -> U {
-        self.act_on(obj.borrow_mut().deref_mut())
-    }
-}
-
-/// Something that can be set at an object.
+/// Puts back the previous current pointer.
 #[unstable]
-pub trait SetAt<F> {
-    /// Modify `F` with self.
-    fn set_at(self, &mut F);
+pub struct CurrentGuard<'a, T: 'a> {
+    _val: &'a mut T,
+    old_ptr: Option<uint>
 }
 
-/// Automatically implemented through the `SetAt` trait.
 #[unstable]
-pub trait Set<T> {
-    /// Set value.
-    fn set(mut self, val: T) -> Self;
-
-    /// Set value through mutable reference.
-    fn set_mut(&mut self, val: T) -> &mut Self;
-}
-
-impl<T, U: SetAt<T>> Set<U> for T {
-    #[inline(always)]
-    fn set(mut self, val: U) -> T {
-        val.set_at(&mut self);
-        self
-    }
-
-    #[inline(always)]
-    fn set_mut(&mut self, val: U) -> &mut T {
-        val.set_at(self);
-        self
+impl<'a, T: 'static> CurrentGuard<'a, T> {
+    /// Creates a new current guard.
+    #[unstable]
+    pub fn new(val: &mut T) -> CurrentGuard<T> {
+        let id = TypeId::of::<T>();
+        let ptr = val as *mut T as uint;
+        let old_ptr = KEY_CURRENT.with(|current| {
+            match current.borrow_mut().entry(id) {
+                Occupied(mut entry) => Some(entry.set(ptr)),
+                Vacant(entry) => {
+                    entry.set(ptr);
+                    None
+                }
+            }
+        });
+        CurrentGuard { old_ptr: old_ptr, _val: val }
     }
 }
 
-/// Something that can be retrieved from another object.
-#[unstable]
-pub trait GetFrom<T> {
-    /// Gets value from object.
-    fn get_from(obj: &T) -> Self;
-}
-
-/// Automatically implemented through the `GetFrom` trait.
-#[unstable]
-pub trait Get<T> {
-    /// Returns new value.
-    fn get(&self) -> T;
-}
-
-impl<T, U: GetFrom<T>> Get<U> for T {
-    #[inline(always)]
-    fn get(&self) -> U {
-        GetFrom::get_from(self)
+#[unsafe_destructor]
+impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
+    fn drop(&mut self) {
+        let id = TypeId::of::<T>();
+        match self.old_ptr {
+            None => {
+                KEY_CURRENT.with(|current| {
+                    current.borrow_mut().remove(&id);
+                });
+                return;
+            }
+            Some(old_ptr) => {
+                KEY_CURRENT.with(|current| {
+                    match current.borrow_mut().entry(id) {
+                        Occupied(mut entry) => { entry.set(old_ptr); }
+                        Vacant(entry) => { entry.set(old_ptr); }
+                    };
+                });
+            }
+        };
     }
 }
 
-/// Does something to an object.
+/// The current value of a type.
 #[unstable]
-pub trait ActOn<T, U> {
-    /// Does something to an object.
-    fn act_on(self, &mut T) -> U;
-}
+pub struct Current<T>(());
 
-/// Automatically implemented through the `ActOn` trait.
 #[unstable]
-pub trait Action<T, U> {
-    /// Does something.
-    fn action(&mut self, val: T) -> U;
-}
+impl<T: 'static> Current<T> {
+    /// Creates a new current object
+    #[unstable]
+    pub unsafe fn new() -> Current<T> { Current(()) }
 
-impl<T, U: ActOn<T, V>, V> Action<U, V> for T {
-    #[inline(always)]
-    fn action(&mut self, val: U) -> V {
-        val.act_on(self)
+    /// Gets mutable reference to current object.
+    /// Requires mutable reference to prevent access to globals in safe code,
+    /// and to prevent mutable borrows of same value in scope.
+    /// Is unsafe because returned reference inherits lifetime from argument.
+    #[unstable]
+    pub unsafe fn current(&mut self) -> Option<&mut T> {
+        use std::mem::transmute;
+        let id = TypeId::of::<T>();
+        let ptr: Option<uint> = KEY_CURRENT.with(|current| {
+                current.borrow().get(&id).map(|id| *id)
+            });
+        let ptr = match ptr { None => { return None; } Some(x) => x };
+        Some(transmute(ptr as *mut T))
+    }
+
+    /// Unwraps mutable reference to current object,
+    /// but with nicer error message.
+    #[unstable]
+    pub unsafe fn current_unwrap(&mut self) -> &mut T {
+        match self.current() {
+            None => {
+                use std::intrinsics::get_tydesc;
+                let name = (*get_tydesc::<T>()).name;
+                panic!("No current `{}` is set", name);
+            }
+            Some(x) => x
+        }
     }
 }
 
+impl<T: 'static> Deref<T> for Current<T> {
+    #[inline(always)]
+    fn deref<'a>(&'a self) -> &'a T {
+        use std::mem::transmute;
+        unsafe {
+            // Current does not contain anything,
+            // so it is safe to transmute to mutable.
+            transmute::<_, &'a mut Current<T>>(self).current_unwrap()
+        }
+    }
+}
+
+impl<T: 'static> DerefMut<T> for Current<T> {
+    #[inline(always)]
+    fn deref_mut<'a>(&'a mut self) -> &'a mut T {
+        unsafe { self.current_unwrap() }
+    }
+}
