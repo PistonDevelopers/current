@@ -1,5 +1,6 @@
 #![deny(missing_docs)]
 #![feature(unsafe_destructor)]
+#![feature(associated_types)]
 #![unstable]
 
 //! A library for setting current values for stack scope,
@@ -9,6 +10,7 @@ use std::cell::RefCell;
 use std::intrinsics::TypeId;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{ Occupied, Vacant };
+use std::ops::{ Deref, DerefMut };
 
 // Stores the current pointers for concrete types.
 thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, uint>> 
@@ -104,7 +106,9 @@ impl<T: 'static> Current<T> {
     }
 }
 
-impl<T: 'static> Deref<T> for Current<T> {
+impl<T: 'static> Deref for Current<T> {
+    type Target = T;
+
     #[inline(always)]
     fn deref<'a>(&'a self) -> &'a T {
         use std::mem::transmute;
@@ -116,7 +120,7 @@ impl<T: 'static> Deref<T> for Current<T> {
     }
 }
 
-impl<T: 'static> DerefMut<T> for Current<T> {
+impl<T: 'static> DerefMut for Current<T> {
     #[inline(always)]
     fn deref_mut<'a>(&'a mut self) -> &'a mut T {
         unsafe { self.current_unwrap() }
