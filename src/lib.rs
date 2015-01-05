@@ -31,10 +31,10 @@ impl<'a, T: 'static> CurrentGuard<'a, T> {
         let id = TypeId::of::<T>();
         let ptr = val as *mut T as uint;
         let old_ptr = KEY_CURRENT.with(|current| {
-            match current.borrow_mut().entry(id) {
-                Occupied(mut entry) => Some(entry.set(ptr)),
+            match current.borrow_mut().entry(&id) {
+                Occupied(mut entry) => Some(entry.insert(ptr)),
                 Vacant(entry) => {
-                    entry.set(ptr);
+                    entry.insert(ptr);
                     None
                 }
             }
@@ -56,9 +56,9 @@ impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
             }
             Some(old_ptr) => {
                 KEY_CURRENT.with(|current| {
-                    match current.borrow_mut().entry(id) {
-                        Occupied(mut entry) => { entry.set(old_ptr); }
-                        Vacant(entry) => { entry.set(old_ptr); }
+                    match current.borrow_mut().entry(&id) {
+                        Occupied(mut entry) => { entry.insert(old_ptr); }
+                        Vacant(entry) => { entry.insert(old_ptr); }
                     };
                 });
             }
