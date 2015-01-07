@@ -1,6 +1,5 @@
 #![deny(missing_docs)]
 #![feature(unsafe_destructor)]
-#![feature(associated_types)]
 #![unstable]
 
 //! A library for setting current values for stack scope,
