@@ -1,6 +1,7 @@
 #![deny(missing_docs)]
 #![feature(unsafe_destructor)]
 #![unstable]
+#![allow(unstable)]
 
 //! A library for setting current values for stack scope,
 //! such as application structure.
@@ -12,14 +13,14 @@ use std::collections::hash_map::Entry::{ Occupied, Vacant };
 use std::ops::{ Deref, DerefMut };
 
 // Stores the current pointers for concrete types.
-thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, uint>> 
+thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, usize>> 
     = RefCell::new(HashMap::new()));
 
 /// Puts back the previous current pointer.
 #[unstable]
 pub struct CurrentGuard<'a, T: 'a> {
     _val: &'a mut T,
-    old_ptr: Option<uint>
+    old_ptr: Option<usize>
 }
 
 #[unstable]
@@ -28,9 +29,9 @@ impl<'a, T: 'static> CurrentGuard<'a, T> {
     #[unstable]
     pub fn new(val: &mut T) -> CurrentGuard<T> {
         let id = TypeId::of::<T>();
-        let ptr = val as *mut T as uint;
+        let ptr = val as *mut T as usize;
         let old_ptr = KEY_CURRENT.with(|current| {
-            match current.borrow_mut().entry(&id) {
+            match current.borrow_mut().entry(id) {
                 Occupied(mut entry) => Some(entry.insert(ptr)),
                 Vacant(entry) => {
                     entry.insert(ptr);
@@ -55,7 +56,7 @@ impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
             }
             Some(old_ptr) => {
                 KEY_CURRENT.with(|current| {
-                    match current.borrow_mut().entry(&id) {
+                    match current.borrow_mut().entry(id) {
                         Occupied(mut entry) => { entry.insert(old_ptr); }
                         Vacant(entry) => { entry.insert(old_ptr); }
                     };
@@ -83,7 +84,7 @@ impl<T: 'static> Current<T> {
     pub unsafe fn current(&mut self) -> Option<&mut T> {
         use std::mem::transmute;
         let id = TypeId::of::<T>();
-        let ptr: Option<uint> = KEY_CURRENT.with(|current| {
+        let ptr: Option<usize> = KEY_CURRENT.with(|current| {
                 current.borrow().get(&id).map(|id| *id)
             });
         let ptr = match ptr { None => { return None; } Some(x) => x };
