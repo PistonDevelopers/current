@@ -7,7 +7,7 @@
 //! such as application structure.
 
 use std::cell::RefCell;
-use std::intrinsics::TypeId;
+use std::any::TypeId;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{ Occupied, Vacant };
 use std::ops::{ Deref, DerefMut };
