@@ -1,7 +1,7 @@
 #![deny(missing_docs)]
 #![feature(unsafe_destructor)]
+#![feature(core, std_misc)]
 #![unstable]
-#![allow(unstable)]
 
 //! A library for setting current values for stack scope,
 //! such as application structure.
