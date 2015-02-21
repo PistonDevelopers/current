@@ -11,6 +11,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{ Occupied, Vacant };
 use std::ops::{ Deref, DerefMut };
+use std::marker::PhantomData;
 
 // Stores the current pointers for concrete types.
 thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, usize>> 
@@ -68,13 +69,13 @@ impl<'a, T: 'static> Drop for CurrentGuard<'a, T> {
 
 /// The current value of a type.
 #[unstable]
-pub struct Current<T>(());
+pub struct Current<T>(PhantomData<T>);
 
 #[unstable]
 impl<T: 'static> Current<T> {
     /// Creates a new current object
     #[unstable]
-    pub unsafe fn new() -> Current<T> { Current(()) }
+    pub unsafe fn new() -> Current<T> { Current(PhantomData) }
 
     /// Gets mutable reference to current object.
     /// Requires mutable reference to prevent access to globals in safe code,
