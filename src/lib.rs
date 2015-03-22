@@ -98,9 +98,8 @@ impl<T: 'static> Current<T> {
     pub unsafe fn current_unwrap(&mut self) -> &mut T {
         match self.current() {
             None => {
-                use std::intrinsics::get_tydesc;
-                let name = (*get_tydesc::<T>()).name;
-                panic!("No current `{}` is set", name);
+                use std::intrinsics::type_name;
+                panic!("No current `{}` is set", type_name::<T>());
             }
             Some(x) => x
         }
