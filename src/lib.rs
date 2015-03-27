@@ -1,6 +1,6 @@
 #![deny(missing_docs)]
 #![feature(unsafe_destructor)]
-#![feature(core, std_misc)]
+#![feature(core)]
 #![unstable]
 
 //! A library for setting current values for stack scope,
@@ -19,11 +19,12 @@ thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, usize>>
 
 /// Puts back the previous current pointer.
 #[unstable]
-pub struct CurrentGuard<'a, T: 'a> {
+pub struct CurrentGuard<'a, T: 'static> {
     _val: &'a mut T,
     old_ptr: Option<usize>
 }
 
+#[allow(trivial_casts)]
 #[unstable]
 impl<'a, T: 'static> CurrentGuard<'a, T> {
     /// Creates a new current guard.
