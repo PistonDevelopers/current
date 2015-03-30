@@ -6,11 +6,11 @@
 //! such as application structure.
 
 use std::cell::RefCell;
-use std::any::TypeId;
+use std::any::{ TypeId, Any };
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{ Occupied, Vacant };
 use std::ops::{ Deref, DerefMut };
-use std::marker::{ PhantomData, Reflect };
+use std::marker::PhantomData;
 
 // Stores the current pointers for concrete types.
 thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, usize>>
@@ -18,14 +18,14 @@ thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, usize>>
 
 /// Puts back the previous current pointer.
 #[unstable]
-pub struct CurrentGuard<'a, T> where T: Reflect + 'static {
+pub struct CurrentGuard<'a, T> where T: Any {
     _val: &'a mut T,
     old_ptr: Option<usize>
 }
 
 #[allow(trivial_casts)]
 #[unstable]
-impl<'a, T> CurrentGuard<'a, T> where T: Reflect + 'static {
+impl<'a, T> CurrentGuard<'a, T> where T: Any {
     /// Creates a new current guard.
     #[unstable]
     pub fn new(val: &mut T) -> CurrentGuard<T> {
@@ -45,7 +45,7 @@ impl<'a, T> CurrentGuard<'a, T> where T: Reflect + 'static {
 }
 
 #[unsafe_destructor]
-impl<'a, T> Drop for CurrentGuard<'a, T> where T: Reflect + 'static {
+impl<'a, T> Drop for CurrentGuard<'a, T> where T: Any {
     fn drop(&mut self) {
         let id = TypeId::of::<T>();
         match self.old_ptr {
@@ -72,7 +72,7 @@ impl<'a, T> Drop for CurrentGuard<'a, T> where T: Reflect + 'static {
 pub struct Current<T>(PhantomData<T>);
 
 #[unstable]
-impl<T> Current<T> where T: Reflect + 'static {
+impl<T> Current<T> where T: Any {
     /// Creates a new current object
     #[unstable]
     pub unsafe fn new() -> Current<T> { Current(PhantomData) }
@@ -106,7 +106,7 @@ impl<T> Current<T> where T: Reflect + 'static {
     }
 }
 
-impl<T> Deref for Current<T> where T: Reflect + 'static {
+impl<T> Deref for Current<T> where T: Any {
     type Target = T;
 
     #[inline(always)]
@@ -120,7 +120,7 @@ impl<T> Deref for Current<T> where T: Reflect + 'static {
     }
 }
 
-impl<T> DerefMut for Current<T> where T: Reflect + 'static {
+impl<T> DerefMut for Current<T> where T: Any {
     #[inline(always)]
     fn deref_mut<'a>(&'a mut self) -> &'a mut T {
         unsafe { self.current_unwrap() }
