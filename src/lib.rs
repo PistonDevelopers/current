@@ -1,5 +1,5 @@
 #![deny(missing_docs)]
-#![feature(core, unsafe_destructor)]
+#![feature(core)]
 #![unstable]
 
 //! A library for setting current values for stack scope,
@@ -44,7 +44,6 @@ impl<'a, T> CurrentGuard<'a, T> where T: Any {
     }
 }
 
-#[unsafe_destructor]
 impl<'a, T> Drop for CurrentGuard<'a, T> where T: Any {
     fn drop(&mut self) {
         let id = TypeId::of::<T>();
