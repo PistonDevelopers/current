@@ -1,6 +1,5 @@
 #![deny(missing_docs)]
 #![feature(core)]
-#![unstable]
 
 //! A library for setting current values for stack scope,
 //! such as application structure.
@@ -17,17 +16,14 @@ thread_local!(static KEY_CURRENT: RefCell<HashMap<TypeId, usize>>
     = RefCell::new(HashMap::new()));
 
 /// Puts back the previous current pointer.
-#[unstable]
 pub struct CurrentGuard<'a, T> where T: Any {
     _val: &'a mut T,
     old_ptr: Option<usize>
 }
 
 #[allow(trivial_casts)]
-#[unstable]
 impl<'a, T> CurrentGuard<'a, T> where T: Any {
     /// Creates a new current guard.
-    #[unstable]
     pub fn new(val: &mut T) -> CurrentGuard<T> {
         let id = TypeId::of::<T>();
         let ptr = val as *mut T as usize;
@@ -67,20 +63,16 @@ impl<'a, T> Drop for CurrentGuard<'a, T> where T: Any {
 }
 
 /// The current value of a type.
-#[unstable]
 pub struct Current<T>(PhantomData<T>);
 
-#[unstable]
 impl<T> Current<T> where T: Any {
     /// Creates a new current object
-    #[unstable]
     pub unsafe fn new() -> Current<T> { Current(PhantomData) }
 
     /// Gets mutable reference to current object.
     /// Requires mutable reference to prevent access to globals in safe code,
     /// and to prevent mutable borrows of same value in scope.
     /// Is unsafe because returned reference inherits lifetime from argument.
-    #[unstable]
     pub unsafe fn current(&mut self) -> Option<&mut T> {
         use std::mem::transmute;
         let id = TypeId::of::<T>();
@@ -93,7 +85,6 @@ impl<T> Current<T> where T: Any {
 
     /// Unwraps mutable reference to current object,
     /// but with nicer error message.
-    #[unstable]
     pub unsafe fn current_unwrap(&mut self) -> &mut T {
         match self.current() {
             None => {
