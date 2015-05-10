@@ -1,5 +1,7 @@
 #![deny(missing_docs)]
 #![feature(core)]
+#![allow(mutable_transmutes)]
+
 
 //! A library for setting current values for stack scope,
 //! such as application structure.
