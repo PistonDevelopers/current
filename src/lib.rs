@@ -1,5 +1,5 @@
 #![deny(missing_docs)]
-#![feature(core)]
+#![feature(core_intrinsics)]
 #![allow(mutable_transmutes)]
 
 
