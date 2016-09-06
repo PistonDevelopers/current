@@ -1,7 +1,6 @@
 #![deny(missing_docs)]
-#![feature(core_intrinsics)]
 #![allow(mutable_transmutes)]
-
+#![cfg_attr(feature = "unstable", feature(core_intrinsics))]
 
 //! A library for setting current values for stack scope,
 //! such as application structure.
@@ -88,11 +87,19 @@ impl<T> Current<T> where T: Any {
     /// Unwraps mutable reference to current object,
     /// but with nicer error message.
     pub unsafe fn current_unwrap(&mut self) -> &mut T {
+        #[cfg(feature = "unstable")]
+        fn report_unstable<T>() -> ! {
+            use std::intrinsics::type_name;
+            panic!("No current `{}` is set", unsafe { type_name::<T>() });
+        }
+
+        #[cfg(not(feature = "unstable"))]
+        fn report_unstable<T>() -> ! {
+            panic!("No current object is set of this type");
+        }
+
         match self.current() {
-            None => {
-                use std::intrinsics::type_name;
-                panic!("No current `{}` is set", type_name::<T>());
-            }
+            None => report_unstable::<T>(),
             Some(x) => x
         }
     }
