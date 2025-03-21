@@ -1,9 +1,7 @@
+#![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
 #![allow(mutable_transmutes)]
 #![cfg_attr(feature = "unstable", feature(core_intrinsics))]
-
-//! A library for setting current values for stack scope,
-//! such as application structure.
 
 use std::cell::RefCell;
 use std::any::{ TypeId, Any };
@@ -81,7 +79,7 @@ impl<T> Current<T> where T: Any {
                 current.borrow().get(&id).map(|id| *id)
             });
         let ptr = match ptr { None => { return None; } Some(x) => x };
-        Some(transmute(ptr as *mut T))
+        Some(unsafe { transmute(ptr as *mut T) })
     }
 
     /// Unwraps mutable reference to current object,
@@ -98,7 +96,7 @@ impl<T> Current<T> where T: Any {
             panic!("No current object is set of this type");
         }
 
-        match self.current() {
+        match unsafe { self.current() } {
             None => report_unstable::<T>(),
             Some(x) => x
         }
