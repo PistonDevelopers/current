@@ -1,6 +1,5 @@
 #![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
-#![allow(mutable_transmutes)]
 #![cfg_attr(feature = "unstable", feature(core_intrinsics))]
 
 use std::cell::RefCell;
@@ -108,11 +107,33 @@ impl<T> Deref for Current<T> where T: Any {
 
     #[inline(always)]
     fn deref<'a>(&'a self) -> &'a T {
-        use std::mem::transmute;
-        unsafe {
-            // Current does not contain anything,
-            // so it is safe to transmute to mutable.
-            transmute::<_, &'a mut Current<T>>(self).current_unwrap()
+        // This uses a custom version for immutable references
+        // to avoid undefined behavior.
+
+        unsafe fn current<'a, T: 'static>(_: &'a T) -> Option<&'a T> {
+            use std::mem::transmute;
+            let id = TypeId::of::<T>();
+            let ptr: Option<usize> = KEY_CURRENT.with(|current| {
+                    current.borrow().get(&id).map(|id| *id)
+                });
+            let ptr = match ptr { None => { return None; } Some(x) => x };
+            Some(unsafe { transmute(ptr as *const T) })
+        }
+
+        #[cfg(feature = "unstable")]
+        fn report_unstable<T>() -> ! {
+            use std::intrinsics::type_name;
+            panic!("No current `{}` is set", unsafe { type_name::<T>() });
+        }
+
+        #[cfg(not(feature = "unstable"))]
+        fn report_unstable<T>() -> ! {
+            panic!("No current object is set of this type");
+        }
+
+        match unsafe { current(self) } {
+            None => report_unstable::<T>(),
+            Some(x) => x
         }
     }
 }
