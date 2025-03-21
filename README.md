@@ -3,7 +3,8 @@ A library for setting current values for stack scope, such as application struct
 
 Current objects are put on a shadow stack for easy access by type.
 The type is used as an identifier to get the latest current object in scope.
-They are used as a better alternative in Rust to globals.
+
+This is used as a better alternative in Rust than mutable globals.
 
 There are two objects in this library:
 
