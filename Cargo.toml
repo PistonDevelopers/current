@@ -12,6 +12,7 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/pistondevelopers/current.git"
 homepage = "https://github.com/pistondevelopers/current"
+edition = "2018"
 
 [lib]
 

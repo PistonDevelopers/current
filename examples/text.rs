@@ -9,7 +9,8 @@ pub struct Foo {
 fn print_foo() {
     let foo = unsafe { &*Current::<Foo>::new() };
     println!("{}", foo.text);
-    unsafe { &mut *Current::<Foo>::new() }.text = "world!".to_string();
+    let foo = unsafe { &mut *Current::<Foo>::new() };
+    foo.text = "world!".to_string();
 }
 
 fn bar() {
