@@ -1,6 +1,5 @@
 #![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
-#![cfg_attr(feature = "unstable", feature(core_intrinsics))]
 
 use std::cell::RefCell;
 use std::any::{ TypeId, Any };
@@ -84,15 +83,9 @@ impl<T> Current<T> where T: Any {
     /// Unwraps mutable reference to current object,
     /// but with nicer error message.
     pub unsafe fn current_unwrap(&mut self) -> &mut T {
-        #[cfg(feature = "unstable")]
         fn report_unstable<T>() -> ! {
-            use std::intrinsics::type_name;
-            panic!("No current `{}` is set", unsafe { type_name::<T>() });
-        }
-
-        #[cfg(not(feature = "unstable"))]
-        fn report_unstable<T>() -> ! {
-            panic!("No current object is set of this type");
+            use std::any::type_name;
+            panic!("No current `{}` is set", type_name::<T>());
         }
 
         match unsafe { self.current() } {
@@ -120,15 +113,9 @@ impl<T> Deref for Current<T> where T: Any {
             Some(unsafe { transmute(ptr as *const T) })
         }
 
-        #[cfg(feature = "unstable")]
         fn report_unstable<T>() -> ! {
-            use std::intrinsics::type_name;
-            panic!("No current `{}` is set", unsafe { type_name::<T>() });
-        }
-
-        #[cfg(not(feature = "unstable"))]
-        fn report_unstable<T>() -> ! {
-            panic!("No current object is set of this type");
+            use std::any::type_name;
+            panic!("No current `{}` is set", type_name::<T>());
         }
 
         match unsafe { current(self) } {
