@@ -103,7 +103,7 @@ impl<T> Deref for Current<T> where T: Any {
         // This uses a custom version for immutable references
         // to avoid undefined behavior.
 
-        unsafe fn current<'a, T: 'static>(_: &'a T) -> Option<&'a T> {
+        unsafe fn current<'a, T: 'static>(_: &'a Current<T>) -> Option<&'a T> {
             use std::mem::transmute;
             let id = TypeId::of::<T>();
             let ptr: Option<usize> = KEY_CURRENT.with(|current| {
